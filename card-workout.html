@@ -472,7 +472,7 @@ function updateCard(card, showExercise) {
 
   if (showExercise) {
     document.getElementById('exerciseName').textContent = s.exercise;
-    document.getElementById('exerciseName').style.color = "#000000"; 
+    document.getElementById('exerciseName').style.color = s.color; 
     document.getElementById('repBubble').textContent = val;
     document.getElementById('repBubble').style.background = s.color === '#d63031' ? '#d63031' : 'var(--accent)';
     document.getElementById('repBubble').style.color = s.color === '#d63031' ? '#fff' : '#0d0d0d';
