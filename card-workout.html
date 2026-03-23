@@ -412,10 +412,10 @@
 
 <script>
 const SUITS = {
-  hearts:   { sym: '♥', cls: 'hearts',   exercise: 'Squats',   color: '#d63031' },
-  diamonds: { sym: '♦', cls: 'diamonds', exercise: 'Burpees',  color: '#d63031' },
-  clubs:    { sym: '♣', cls: 'clubs',    exercise: 'Push-Ups', color: '#1a1a1a' },
-  spades:   { sym: '♠', cls: 'spades',   exercise: 'Crunches', color: '#1a1a1a' },
+  hearts:   { sym: '♥', cls: 'hearts',   exercise: 'Squats',   color: '#d63031', textColor: '#d63031' },
+  diamonds: { sym: '♦', cls: 'diamonds', exercise: 'Burpees',  color: '#d63031', textColor: '#d63031' },
+  clubs:    { sym: '♣', cls: 'clubs',    exercise: 'Push-Ups', color: '#1a1a1a', textColor: '#f5f0e8' },
+  spades:   { sym: '♠', cls: 'spades',   exercise: 'Crunches', color: '#1a1a1a', textColor: '#f5f0e8' },
 };
 const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
 const RANK_VALS = { A:14, '2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10, J:11, Q:12, K:13 };
@@ -472,10 +472,10 @@ function updateCard(card, showExercise) {
 
   if (showExercise) {
     document.getElementById('exerciseName').textContent = s.exercise;
-    document.getElementById('exerciseName').style.color = s.color; 
+    document.getElementById('exerciseName').style.color = s.textColor;
     document.getElementById('repBubble').textContent = val;
-    document.getElementById('repBubble').style.background = s.color === '#d63031' ? '#d63031' : 'var(--accent)';
-    document.getElementById('repBubble').style.color = s.color === '#d63031' ? '#fff' : '#0d0d0d';
+    document.getElementById('repBubble').style.background = s.textColor === '#d63031' ? '#d63031' : 'var(--accent)';
+    document.getElementById('repBubble').style.color = s.textColor === '#d63031' ? '#fff' : '#0d0d0d';
     document.getElementById('exerciseCount').innerHTML =
       `<strong>${val} reps</strong> of ${s.exercise} — total: ${totalReps} reps`;
   }
