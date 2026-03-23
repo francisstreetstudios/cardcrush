@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>CARD CRUSH</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #1a1a1a;
+    --card-bg: #f5f0e8;
+    --red: #d63031;
+    --black-suit: #1a1a1a;
+    --accent: #f9ca24;
+    --text: #f5f0e8;
+    --dim: #666;
+    --green: #00b894;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%; width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    overflow: hidden;
+    touch-action: manipulation;
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: opacity .4s ease, transform .4s ease;
+  }
+  .screen.hidden { opacity: 0; pointer-events: none; transform: scale(.96); }
+
+  /* ── START SCREEN ── */
+  #start {
+    gap: 0;
+    background: var(--bg);
+  }
+
+  .logo {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: clamp(52px, 16vw, 88px);
+    letter-spacing: -2px;
+    line-height: .9;
+    text-align: center;
+    color: var(--text);
+  }
+  .logo span { color: var(--accent); }
+
+  .tagline {
+    font-size: clamp(11px, 3vw, 13px);
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin: 18px 0 48px;
+  }
+
+  .suit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: min(320px, 88vw);
+    margin-bottom: 48px;
+  }
+  .suit-card {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .suit-icon {
+    font-size: 22px;
+    line-height: 1;
+  }
+  .suit-label {
+    display: flex; flex-direction: column;
+  }
+  .suit-label b {
+    font-size: 13px; font-weight: 700; color: var(--text);
+  }
+  .suit-label span {
+    font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: .1em;
+  }
+  .red-suit .suit-icon { color: var(--red); }
+  .black-suit .suit-icon { color: #bbb; }
+
+  .go-btn {
+    width: min(320px, 88vw);
+    height: 64px;
+    border: none;
+    border-radius: 14px;
+    background: var(--accent);
+    color: #0d0d0d;
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 24px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: transform .12s, box-shadow .12s;
+    box-shadow: 0 0 0 0 rgba(249,202,36,.4);
+  }
+  .go-btn:active {
+    transform: scale(.97);
+  }
+
+  /* ── GAME SCREEN ── */
+  #game {
+    background: var(--bg);
+    gap: 0;
+    justify-content: space-between;
+    padding: 0;
+  }
+
+  .top-bar {
+    width: 100%; display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 20px 0;
+    flex-shrink: 0;
+  }
+  .stat-block { text-align: center; }
+  .stat-num {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: clamp(22px, 7vw, 32px);
+    color: var(--accent);
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 9px; color: var(--dim); text-transform: uppercase; letter-spacing: .12em; margin-top: 2px;
+  }
+
+  /* Progress bar */
+  .progress-wrap {
+    width: calc(100% - 40px);
+    margin: 12px 20px 0;
+    height: 4px;
+    background: var(--surface);
+    border-radius: 2px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width .5s ease;
+    width: 0%;
+  }
+
+  /* ── CARD AREA ── */
+  .card-area {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center;
+    width: 100%;
+    cursor: pointer;
+    user-select: none;
+    perspective: 1000px;
+    padding: 12px 0;
+  }
+
+  .card-scene {
+    width: min(260px, 72vw);
+    aspect-ratio: 2.5/3.5;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform .55s cubic-bezier(.23,1,.32,1);
+  }
+  .card-scene.flip { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute; inset: 0;
+    backface-visibility: hidden;
+    border-radius: 18px;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,.6), 0 4px 12px rgba(0,0,0,.4);
+  }
+
+  /* Front face */
+  .card-front {
+    background: var(--card-bg);
+    padding: 14px;
+    justify-content: space-between;
+  }
+  .card-corner {
+    display: flex; flex-direction: column; align-items: center;
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: clamp(22px, 7vw, 30px);
+    line-height: 1;
+    gap: 2px;
+  }
+  .card-corner .suit-small { font-size: clamp(16px, 5vw, 22px); }
+  .card-corner-bottom { transform: rotate(180deg); }
+
+  .card-center {
+    display: flex; align-items: center; justify-content: center;
+    flex: 1;
+  }
+  .center-suit {
+    font-size: clamp(80px, 24vw, 120px);
+    line-height: 1;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,.15));
+  }
+
+  /* Back face */
+  .card-back {
+    transform: rotateY(180deg);
+    background: #1e1e2e;
+    align-items: center; justify-content: center;
+    border: 6px solid rgba(255,255,255,.06);
+  }
+  .back-pattern {
+    width: 100%; height: 100%;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    opacity: .15;
+    padding: 8px;
+    gap: 4px;
+  }
+  .back-dot {
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  /* ── TAP HINT ── */
+  .tap-hint {
+    font-size: 11px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--dim);
+    flex-shrink: 0;
+    padding-bottom: 8px;
+    transition: opacity .3s;
+  }
+
+  /* ── EXERCISE BANNER ── */
+  .exercise-banner {
+    width: 100%;
+    background: var(--surface);
+    padding: 16px 24px 20px;
+    flex-shrink: 0;
+  }
+  .exercise-name {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: clamp(28px, 10vw, 44px);
+    line-height: 1;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .exercise-count {
+    font-size: clamp(14px, 4vw, 16px);
+    color: var(--dim);
+    margin-top: 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+  .exercise-count strong { color: var(--accent); }
+  .rep-bubble {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--accent);
+    color: #0d0d0d;
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: clamp(18px, 5.5vw, 26px);
+    border-radius: 50%;
+    width: clamp(46px, 13vw, 60px);
+    height: clamp(46px, 13vw, 60px);
+    flex-shrink: 0;
+  }
+
+  /* ── DONE SCREEN ── */
+  #done {
+    background: var(--bg);
+    gap: 24px;
+    padding: 40px 24px;
+  }
+  .done-icon { font-size: 72px; }
+  .done-title {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: clamp(40px, 14vw, 64px);
+    color: var(--accent);
+    text-align: center;
+    line-height: 1;
+  }
+  .done-stats {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px; width: min(320px, 88vw);
+  }
+  .done-stat {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+  .done-stat-num {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 32px;
+    color: var(--accent);
+  }
+  .done-stat-label { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: .12em; margin-top: 4px; }
+  .again-btn {
+    width: min(320px, 88vw);
+    height: 60px;
+    border: 2px solid var(--accent);
+    border-radius: 14px;
+    background: transparent;
+    color: var(--accent);
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .again-btn:active { background: var(--accent); color: #0d0d0d; }
+
+  /* Suit colors */
+  .hearts, .diamonds { color: var(--red); }
+  .spades, .clubs { color: var(--black-suit); }
+
+  /* Pulse animation for tap hint */
+  @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+  .tap-hint.pulse { animation: pulse 2s ease-in-out infinite; }
+
+  /* Card flip entrance animation */
+  @keyframes cardIn { from{opacity:0;transform:translateY(30px) scale(.94)} to{opacity:1;transform:none} }
+  .card-scene { animation: cardIn .4s ease both; }
+</style>
+</head>
+<body>
+
+<!-- START -->
+<div class="screen" id="start">
+  <div class="logo">CARD<br><span>CRUSH</span></div>
+  <div class="tagline">Deck of Cards Workout</div>
+  <div class="suit-grid">
+    <div class="suit-card red-suit"><div class="suit-icon">♥</div><div class="suit-label"><b>Hearts</b><span>Squats</span></div></div>
+    <div class="suit-card red-suit"><div class="suit-icon">♦</div><div class="suit-label"><b>Diamonds</b><span>Burpees</span></div></div>
+    <div class="suit-card black-suit"><div class="suit-icon">♣</div><div class="suit-label"><b>Clubs</b><span>Push-Ups</span></div></div>
+    <div class="suit-card black-suit"><div class="suit-icon">♠</div><div class="suit-label"><b>Spades</b><span>Crunches</span></div></div>
+  </div>
+  <button class="go-btn" id="startBtn">LET'S GO</button>
+</div>
+
+<!-- GAME -->
+<div class="screen hidden" id="game">
+  <div class="top-bar">
+    <div class="stat-block">
+      <div class="stat-num" id="cardCount">0</div>
+      <div class="stat-label">Cards Done</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-num" id="repTotal">0</div>
+      <div class="stat-label">Total Reps</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-num" id="cardsLeft">52</div>
+      <div class="stat-label">Remaining</div>
+    </div>
+  </div>
+
+  <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
+
+  <div class="card-area" id="cardArea">
+    <div class="card-scene" id="cardScene">
+      <div class="card-face card-front" id="cardFront">
+        <div class="card-corner" id="cornerTL">
+          <span id="rankTL">A</span>
+          <span class="suit-small" id="suitTL">♠</span>
+        </div>
+        <div class="card-center"><div class="center-suit" id="centerSuit">♠</div></div>
+        <div class="card-corner card-corner-bottom" id="cornerBR">
+          <span id="rankBR">A</span>
+          <span class="suit-small" id="suitBR">♠</span>
+        </div>
+      </div>
+      <div class="card-face card-back">
+        <div class="back-pattern" id="backPattern"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tap-hint pulse" id="tapHint">TAP TO FLIP NEXT CARD</div>
+
+  <div class="exercise-banner">
+    <div class="exercise-name">
+      <div class="rep-bubble" id="repBubble">—</div>
+      <span id="exerciseName">Get Ready</span>
+    </div>
+    <div class="exercise-count" id="exerciseCount">Tap the card to begin</div>
+  </div>
+</div>
+
+<!-- DONE -->
+<div class="screen hidden" id="done">
+  <div class="done-icon">🏆</div>
+  <div class="done-title">DECK<br>CRUSHED</div>
+  <div class="done-stats">
+    <div class="done-stat"><div class="done-stat-num" id="doneReps">0</div><div class="done-stat-label">Total Reps</div></div>
+    <div class="done-stat"><div class="done-stat-num" id="doneSquats">0</div><div class="done-stat-label">Squats</div></div>
+    <div class="done-stat"><div class="done-stat-num" id="doneBurpees">0</div><div class="done-stat-label">Burpees</div></div>
+    <div class="done-stat"><div class="done-stat-num" id="donePushups">0</div><div class="done-stat-label">Push-Ups</div></div>
+    <div class="done-stat"><div class="done-stat-num" id="doneCrunches">0</div><div class="done-stat-label">Crunches</div></div>
+    <div class="done-stat"><div class="done-stat-num">52</div><div class="done-stat-label">Cards Done</div></div>
+  </div>
+  <button class="again-btn" id="againBtn">PLAY AGAIN</button>
+</div>
+
+<script>
+const SUITS = {
+  hearts:   { sym: '♥', cls: 'hearts',   exercise: 'Squats',   color: '#d63031' },
+  diamonds: { sym: '♦', cls: 'diamonds', exercise: 'Burpees',  color: '#d63031' },
+  clubs:    { sym: '♣', cls: 'clubs',    exercise: 'Push-Ups', color: '#1a1a1a' },
+  spades:   { sym: '♠', cls: 'spades',   exercise: 'Crunches', color: '#1a1a1a' },
+};
+const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const RANK_VALS = { A:14, '2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10, J:11, Q:12, K:13 };
+
+function buildDeck() {
+  const deck = [];
+  for (const suit of Object.keys(SUITS))
+    for (const rank of RANKS)
+      deck.push({ suit, rank });
+  // shuffle
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  return deck;
+}
+
+// Build back pattern
+const bp = document.getElementById('backPattern');
+for (let i = 0; i < 42; i++) { const d = document.createElement('div'); d.className = 'back-dot'; bp.appendChild(d); }
+
+let deck, cardIndex, totalReps, suitReps, flipped, animating;
+
+function init() {
+  deck = buildDeck();
+  cardIndex = 0;
+  totalReps = 0;
+  suitReps = { hearts: 0, diamonds: 0, clubs: 0, spades: 0 };
+  flipped = false;
+  animating = false;
+  updateCard(deck[0], false);
+  updateStats();
+  document.getElementById('exerciseName').textContent = 'Get Ready';
+  document.getElementById('exerciseCount').textContent = 'Tap the card to begin';
+  document.getElementById('repBubble').textContent = '—';
+  document.getElementById('repBubble').style.background = 'var(--accent)';
+  document.getElementById('exerciseName').style.color = 'var(--text)';
+  document.getElementById('tapHint').classList.add('pulse');
+}
+
+function updateCard(card, showExercise) {
+  const s = SUITS[card.suit];
+  const val = RANK_VALS[card.rank];
+
+  // Update front face content
+  ['rankTL','rankBR'].forEach(id => document.getElementById(id).textContent = card.rank);
+  ['suitTL','suitBR','centerSuit'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = s.sym;
+    el.className = el.className.replace(/hearts|diamonds|clubs|spades/g, '');
+    el.classList.add(s.cls);
+  });
+  document.getElementById('cardFront').style.color = s.color;
+
+  if (showExercise) {
+    document.getElementById('exerciseName').textContent = s.exercise;
+    document.getElementById('exerciseName').style.color = s.color;
+    document.getElementById('repBubble').textContent = val;
+    document.getElementById('repBubble').style.background = s.color === '#d63031' ? '#d63031' : 'var(--accent)';
+    document.getElementById('repBubble').style.color = s.color === '#d63031' ? '#fff' : '#0d0d0d';
+    document.getElementById('exerciseCount').innerHTML =
+      `<strong>${val} reps</strong> of ${s.exercise} — total: ${totalReps} reps`;
+  }
+}
+
+function updateStats() {
+  document.getElementById('cardCount').textContent = cardIndex;
+  document.getElementById('repTotal').textContent = totalReps;
+  document.getElementById('cardsLeft').textContent = 52 - cardIndex;
+  document.getElementById('progressFill').style.width = ((cardIndex / 52) * 100) + '%';
+}
+
+function doFlip() {
+  if (animating) return;
+  const scene = document.getElementById('cardScene');
+
+  if (cardIndex === 0) {
+    // First tap: just show card front without incrementing
+    animating = true;
+    scene.classList.add('flip');
+    setTimeout(() => {
+      // un-flip to show front
+      scene.classList.remove('flip');
+      setTimeout(() => {
+        const card = deck[cardIndex];
+        updateCard(card, true);
+        const val = RANK_VALS[card.rank];
+        totalReps += val;
+        suitReps[card.suit] += val;
+        cardIndex = 1;
+        updateStats();
+        animating = false;
+      }, 300);
+    }, 300);
+    return;
+  }
+
+  if (cardIndex >= 52) return;
+
+  animating = true;
+
+  // Flip to back
+  scene.classList.add('flip');
+
+  setTimeout(() => {
+    // Load next card data while showing back
+    const card = deck[cardIndex];
+    updateCard(card, false);
+
+    // Flip back to front
+    scene.classList.remove('flip');
+
+    setTimeout(() => {
+      const val = RANK_VALS[card.rank];
+      totalReps += val;
+      suitReps[card.suit] += val;
+      cardIndex++;
+      updateStats();
+      updateCard(card, true);
+
+      if (cardIndex >= 52) {
+        setTimeout(showDone, 800);
+      }
+      animating = false;
+    }, 300);
+  }, 300);
+}
+
+function showDone() {
+  document.getElementById('doneReps').textContent = totalReps;
+  document.getElementById('doneSquats').textContent = suitReps.hearts;
+  document.getElementById('doneBurpees').textContent = suitReps.diamonds;
+  document.getElementById('donePushups').textContent = suitReps.clubs;
+  document.getElementById('doneCrunches').textContent = suitReps.spades;
+  show('done');
+}
+
+function show(id) {
+  ['start','game','done'].forEach(s => {
+    document.getElementById(s).classList.toggle('hidden', s !== id);
+  });
+}
+
+// Event listeners
+document.getElementById('startBtn').addEventListener('click', () => {
+  init();
+  show('game');
+});
+
+document.getElementById('cardArea').addEventListener('click', doFlip);
+document.getElementById('cardArea').addEventListener('touchstart', e => { e.preventDefault(); doFlip(); }, { passive: false });
+
+document.getElementById('againBtn').addEventListener('click', () => {
+  init();
+  show('game');
+});
+</script>
+</body>
+</html>
